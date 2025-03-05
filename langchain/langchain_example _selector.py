@@ -2,17 +2,26 @@
 # 根据长度要求智能选择示例
 # 根据输入相似度选择示例(最大边际相关性)
 # 根据输入相似度选择示例(最大余弦相似度)
+from langchain_community.chat_models import ChatTongyi
+from langchain_community.embeddings import DashScopeEmbeddings
 from langchain_community.vectorstores import Chroma
 from langchain_core.example_selectors import LengthBasedExampleSelector, \
   MaxMarginalRelevanceExampleSelector
+from langchain_core.example_selectors.semantic_similarity import \
+  SemanticSimilarityExampleSelector
 from langchain_core.prompts import PromptTemplate, FewShotPromptTemplate
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from pydantic import SecretStr
 
 
-llm = ChatOpenAI(base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
-                 model="deepseek-v3",
-                 api_key=SecretStr("sk-7dfe20a081554d3e896c7044ed951b0a"))
+# llm = ChatOpenAI(base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
+#                  model="deepseek-v3",
+#                  api_key=SecretStr("sk-7dfe20a081554d3e896c7044ed951b0a"))
+
+llm = ChatTongyi(model="deepseek-v3",
+           api_key=SecretStr("sk-7dfe20a081554d3e896c7044ed951b0a"),
+           streaming=True)
+
 
 examples = [
   {"input": "好", "output": "坏"},
@@ -172,14 +181,27 @@ length_selector = LengthBasedExampleSelector(
     max_length=25,
 )
 
-# 语义相关选择器
-marginal_selector = MaxMarginalRelevanceExampleSelector.from_examples(
+# 最大边际关选择器  如果希望搜索出来即相关又多样 选这个
+# marginal_selector = MaxMarginalRelevanceExampleSelector.from_examples(
+#     # 传入示例组
+#     examples=examples,
+#     # embeddings
+#     embeddings=DashScopeEmbeddings(
+#         dashscope_api_key="sk-7dfe20a081554d3e896c7044ed951b0a",
+#         model="text-embedding-v3"),
+#     # 使用向量数据库
+#     vectorstore_cls=Chroma,
+#     # 结果条数
+#     k=2
+# )
+
+# 向量余弦相似度  只关注相似度
+semantics_selector = SemanticSimilarityExampleSelector.from_examples(
     # 传入示例组
     examples=examples,
     # embeddings
-    embeddings=OpenAIEmbeddings(
-        base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
-        api_key=SecretStr("sk-7dfe20a081554d3e896c7044ed951b0a"),
+    embeddings=DashScopeEmbeddings(
+        dashscope_api_key="sk-7dfe20a081554d3e896c7044ed951b0a",
         model="text-embedding-v3"),
     # 使用向量数据库
     vectorstore_cls=Chroma,
@@ -191,7 +213,8 @@ marginal_selector = MaxMarginalRelevanceExampleSelector.from_examples(
 dynamic_prompt = FewShotPromptTemplate(
     example_prompt=example_prompt,
     # example_selector=length_selector,
-    example_selector=marginal_selector,
+    # example_selector=marginal_selector,
+    example_selector=semantics_selector,
     prefix="给出原词的反义词",
     suffix="原词:{input},\n反义词:",
     input_variables=["input"]
@@ -200,3 +223,4 @@ dynamic_prompt = FewShotPromptTemplate(
 print(dynamic_prompt.format(input="辉煌"))
 
 print(llm.invoke(dynamic_prompt.format(input="辉煌")))
+
