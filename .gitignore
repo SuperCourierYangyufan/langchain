@@ -43,3 +43,6 @@ ENV/
 # Local development settings
 .env
 .venv
+
+
+cache/
