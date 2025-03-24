@@ -2,7 +2,7 @@ from langchain_community.document_loaders import TextLoader, DirectoryLoader, \
   PDFMinerLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
-loader = PDFMinerLoader("C:\\Users\\Administrator\\WPSDrive\\1368392886\\WPS云盘\\学习\\阿里，字节，华为2021年度Java面试题汇总.pdf")
+loader = TextLoader("E:\\note\\账号.txt",autodetect_encoding=True)
 
 
 spliter = RecursiveCharacterTextSplitter(
@@ -23,3 +23,5 @@ spliter = RecursiveCharacterTextSplitter(
 # 生成文档
 text = spliter.create_documents([doc.page_content for doc in loader.load()])
 print(text)
+
+
