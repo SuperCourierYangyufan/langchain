@@ -1,5 +1,3 @@
-# 
-
 from langchain_community.callbacks import get_openai_callback
 from langchain_openai import ChatOpenAI
 from pydantic import SecretStr
